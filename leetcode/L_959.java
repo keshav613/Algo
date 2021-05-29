@@ -1,76 +1,54 @@
 class Solution {
+    int[] parent , rank;
+    int distinctGroups;
     public int regionsBySlashes(String[] grid) {
-        int N = grid.length;
-        UF dsu = new UF(4 * N * N);
+        int N = grid.length, unitSquares = N*N , quadrants = 4*unitSquares;
+        
+        distinctGroups = quadrants;
+        parent = new int[quadrants]; Arrays.fill(parent, -1);
+        rank = new int[quadrants];
+        
         for (int r = 0; r < N; ++r)
             for (int c = 0; c < N; ++c) {
                 int root = 4 * (r * N + c);
                 char val = grid[r].charAt(c);
                 if (val != '\\') {
-                    dsu.union(root + 0, root + 1);
-                    dsu.union(root + 2, root + 3);
+                    union(root + 3, root + 0);
+                    union(root + 1, root + 2);                    
                 }
                 if (val != '/') {
-                    dsu.union(root + 0, root + 2);
-                    dsu.union(root + 1, root + 3);
+                    union(root + 0, root + 1);
+                    union(root + 2, root + 3);
                 }
-
-                // north south
-                if (r + 1 < N)
-                    dsu.union(root + 3, (root + 4 * N) + 0);
-                if (r - 1 >= 0)
-                    dsu.union(root + 0, (root - 4 * N) + 3);
-                // east west
+                // Merge with right
+                if (r +1 < N)
+                    union(root + 2, root + N*4 );
+                //Merge with bottom
                 if (c + 1 < N)
-                    dsu.union(root + 2, (root + 4) + 1);
-                if (c - 1 >= 0)
-                    dsu.union(root + 1, (root - 4) + 2);
+                    union(root + 1, root + 7);
             }
 
-        int ans = 0;
-        for (int x = 0; x < 4 * N * N; ++x) {
-            if (dsu.find(x) == x)
-                ans++;
-        }
-
-        return ans;
-    }
-}
-
-class UF {
-    Subset[] sub;
-    UF(int N){
-        sub = new Subset[N];
-        for(int i = 0; i < N; i++){
-            sub[i] = new Subset();
-            sub[i].parent = i; sub[i].rank = 0;
-        }
+        return distinctGroups;
     }
     public int find(int x){
-        if(x != sub[x].parent)
-            sub[x].parent = find(sub[x].parent);
-        return sub[x].parent;
+        if( parent[x]==-1 )
+            return x;
+        return parent[x] = find(parent[x]);
     }
-    
     public void union(int x, int y){
-        int xroot = find(x);
-        int yroot = find(y);
-        
-        if(sub[xroot].rank < sub[yroot].rank){
-            sub[xroot].parent = sub[yroot].parent;
-        }else if(sub[xroot].rank > sub[yroot].rank){
-            sub[yroot].parent = sub[xroot].parent;
+        int xParent = find(x);
+        int yParent = find(y);
+        //If already parents are same it means x & y are already merged
+        if(xParent == yParent) return;
+        //Else, merge x & y. Two groups are merged into one, so distinctGroups--.
+        distinctGroups--;
+        if(rank[xParent] < rank[yParent]){
+            parent[xParent] = yParent;
+        }else if(rank[xParent] > rank[yParent]){
+            parent[yParent] = xParent;
         }else{
-            sub[xroot].parent = sub[yroot].parent;
-            sub[yroot].rank++;
+            parent[yParent] = xParent;
+            rank[xParent]++;
         }
     }
-    
 }
-
-class Subset{
-    int parent; int rank;
-}
-
-//https://leetcode.com/problems/regions-cut-by-slashes/
-//https://leetcode.com/problems/regions-cut-by-slashes/solution/
